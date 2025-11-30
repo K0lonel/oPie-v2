@@ -10,6 +10,8 @@ SetWorkingDir A_ScriptDir
 ; Setup Overlay
 oPie_draw := ShinsOverlayClass(0, 0, A_ScreenWidth, A_ScreenHeight)
 oPie_draw.SetAntialias(True)
+
+; Load Settings and Assets
 ensureJSON(&settings)
 loadAssets(wheel := loadWheel())
 
@@ -17,7 +19,7 @@ loadAssets(wheel := loadWheel())
 isKeyDown := false
 anchor_curX := 0, anchor_curY := 0
 
-; --- Configuration Constants ---
+; Configuration Constants
 pi := 3.1415926535
 itemCount := settings["items"].Length
 radius := settings["constants"]["radius"]
@@ -254,13 +256,11 @@ try {
 }
 
 GetDominantVibrantColor(imagePath, &color, alpha := 255) {
-  ; 1. Load the image
   pBitmap := 0
   DllCall("gdiplus\GdipCreateBitmapFromFile", "Str", imagePath, "Ptr*", &pBitmap)
   if !pBitmap
     return { hex: "0xFFFFFFFF", r: 1, g: 1, b: 1 }
 
-  ; 2. Create Thumbnail (Performance optimization)
   w := 25, h := 25
   pThumb := 0
   DllCall("gdiplus\GdipGetImageThumbnail", "ptr", pBitmap, "uint", w, "uint", h, "ptr*", &pThumb, "ptr", 0, "ptr", 0)
@@ -268,7 +268,6 @@ GetDominantVibrantColor(imagePath, &color, alpha := 255) {
 
   sumR := 0, sumG := 0, sumB := 0, count := 0
 
-  ; 3. Iterate pixels
   loop w {
     x := A_Index - 1
     loop h {
@@ -295,7 +294,6 @@ GetDominantVibrantColor(imagePath, &color, alpha := 255) {
   if (count == 0)
     return { hex: "0xFFFFFFFF", r: 1, g: 1, b: 1 }
 
-  ; 4. Average and Boost
   avgR := sumR / count
   avgG := sumG / count
   avgB := sumB / count
@@ -303,20 +301,13 @@ GetDominantVibrantColor(imagePath, &color, alpha := 255) {
   finalHsl := rgb2hsl(avgR, avgG, avgB)
   finalS := Max(finalHsl.s, 0.60)
   finalL := Max(0.40, Min(finalHsl.l, 0.70))
-
-  ; Get final RGB Floats (0.0 - 1.0)
   resRGB := hsl2rgb(finalHsl.h, finalS, finalL)
 
-  ; 5. FORMAT OUTPUT
-  ; Convert floats to 0-255 Integers
   intR := Floor(resRGB.r * 255)
   intG := Floor(resRGB.g * 255)
   intB := Floor(resRGB.b * 255)
-
-  ; Create the Hex String (0xAARRGGBB)
   hexColor := Format("0x{:02X}{:02X}{:02X}{:02X}", alpha, intR, intG, intB)
 
-  ; Return everything you might need
   color := {
     hex: hexColor,
     r: resRGB.r,
@@ -329,7 +320,6 @@ CreateTintedVariant(sourcePath, customKey, tintR, tintG, tintB) {
   if !FileExist(sourcePath)
     return false
 
-  ; 1. Load Source
   bm := 0
   DllCall("gdiplus\GdipCreateBitmapFromFile", "Str", sourcePath, "Ptr*", &bm)
   if (!bm)
@@ -339,14 +329,12 @@ CreateTintedVariant(sourcePath, customKey, tintR, tintG, tintB) {
   DllCall("gdiplus\GdipGetImageWidth", "Ptr", bm, "Uint*", &w)
   DllCall("gdiplus\GdipGetImageHeight", "Ptr", bm, "Uint*", &h)
 
-  ; 2. Create Canvas
   newBm := 0
   DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", w, "int", h, "int", 0, "int", 0x26200A, "Ptr", 0, "Ptr*", &
     newBm)
   g := 0
   DllCall("gdiplus\GdipGetImageGraphicsContext", "Ptr", newBm, "Ptr*", &g)
 
-  ; 3. Tint Matrix
   ia := 0
   DllCall("gdiplus\GdipCreateImageAttributes", "Ptr*", &ia)
   matrix := Buffer(100, 0)
@@ -361,16 +349,12 @@ CreateTintedVariant(sourcePath, customKey, tintR, tintG, tintB) {
   DllCall("gdiplus\GdipDrawImageRectRect", "Ptr", g, "Ptr", bm, "float", 0, "float", 0, "float", w, "float", h,
     "float", 0, "float", 0, "float", w, "float", h, "int", 2, "Ptr", ia, "Ptr", 0, "Ptr", 0)
 
-  ; 4. Lock & Prepare for D2D
   rect := Buffer(16, 0)
   NumPut("int", w, rect, 8), NumPut("int", h, rect, 12)
   bmdata := Buffer(32, 0)
   DllCall("Gdiplus\GdipBitmapLockBits", "Ptr", newBm, "Ptr", rect, "uint", 3, "int", 0x26200A, "Ptr", bmdata)
   scan := NumGet(bmdata, 16, "Ptr")
 
-  ; --- MEMORY INJECTION INTO CUSTOM KEY ---
-
-  ; Delete the OLD tinted version if it exists to free memory
   if (oPie_draw.imageCache.Has(customKey)) {
     if (oPie_draw.imageCache[customKey]["p"] && oPie_draw.vTable(oPie_draw.imageCache[customKey]["p"], 2)) {
       DllCall(oPie_draw.vTable(oPie_draw.imageCache[customKey]["p"], 2), "ptr", oPie_draw.imageCache[customKey][
@@ -400,7 +384,6 @@ CreateTintedVariant(sourcePath, customKey, tintR, tintG, tintB) {
   if (d2dBitmap)
     oPie_draw.imageCache[customKey] := Map("p", d2dBitmap, "w", w, "h", h)
 
-  ; Cleanup
   DllCall("Gdiplus\GdipBitmapUnlockBits", "Ptr", newBm, "Ptr", bmdata)
   DllCall("gdiplus\GdipDisposeImageAttributes", "Ptr", ia)
   DllCall("gdiplus\GdipDeleteGraphics", "Ptr", g)
@@ -411,7 +394,6 @@ CreateTintedVariant(sourcePath, customKey, tintR, tintG, tintB) {
 }
 
 ApplyTintManual(image, tintR, tintG, tintB) {
-  ; 1. Load the GDI+ Bitmap from file
   bm := 0
   DllCall("gdiplus\GdipCreateBitmapFromFile", "Str", image, "Ptr*", &bm)
   if (!bm) {
@@ -419,26 +401,22 @@ ApplyTintManual(image, tintR, tintG, tintB) {
     return false
   }
 
-  ; 2. Get Dimensions
   w := 0, h := 0
   DllCall("gdiplus\GdipGetImageWidth", "Ptr", bm, "Uint*", &w)
   DllCall("gdiplus\GdipGetImageHeight", "Ptr", bm, "Uint*", &h)
 
-  ; 3. Create a blank canvas (new Bitmap) to draw the tinted result onto
   newBm := 0
   DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", w, "int", h, "int", 0, "int", 0x26200A, "Ptr", 0, "Ptr*", &
     newBm)
 
-  ; Get Graphics context for the new bitmap
   g := 0
   DllCall("gdiplus\GdipGetImageGraphicsContext", "Ptr", newBm, "Ptr*", &g)
 
-  ; 4. Create ImageAttributes and apply the Color Matrix (Replaces the slow Pixel Loop)
   ia := 0
   DllCall("gdiplus\GdipCreateImageAttributes", "Ptr*", &ia)
 
   ; Color Matrix (5x5 matrix to multiply R, G, B channels)
-  ; Values are floats. Format:
+  ; Format:
   ; [ R, 0, 0, 0, 0 ]
   ; [ 0, G, 0, 0, 0 ]
   ; [ 0, 0, B, 0, 0 ]
@@ -454,23 +432,15 @@ ApplyTintManual(image, tintR, tintG, tintB) {
   DllCall("gdiplus\GdipSetImageAttributesColorMatrix", "Ptr", ia, "int", 1, "int", 1, "Ptr", matrix, "Ptr", 0, "int",
     0)
 
-  ; Draw the original image onto the new bitmap using the Tint Matrix
   DllCall("gdiplus\GdipDrawImageRectRect", "Ptr", g, "Ptr", bm, "float", 0, "float", 0, "float", w, "float", h,
     "float", 0, "float", 0, "float", w, "float", h, "int", 2, "Ptr", ia, "Ptr", 0, "Ptr", 0)
 
-  ; 5. Lock bits of the NEW tinted bitmap to prepare for Direct2D injection
   rect := Buffer(16, 0)
   NumPut("int", w, rect, 8), NumPut("int", h, rect, 12)
   bmdata := Buffer(32, 0)
   DllCall("Gdiplus\GdipBitmapLockBits", "Ptr", newBm, "Ptr", rect, "uint", 3, "int", 0x26200A, "Ptr", bmdata)
   scan := NumGet(bmdata, 16, "Ptr")
 
-  ; -------------------------------------------------------------------------
-  ; DIRECT MEMORY INJECTION (Bypassing File Save/Load)
-  ; This logic copies how ShinsOverlayClass converts GDI+ -> Direct2D internally
-  ; -------------------------------------------------------------------------
-
-  ; Clear existing cache for this image if it exists
   if (oPie_draw.imageCache.Has(image)) {
     if (oPie_draw.imageCache[image]["p"] && oPie_draw.vTable(oPie_draw.imageCache[image]["p"], 2)) {
       DllCall(oPie_draw.vTable(oPie_draw.imageCache[image]["p"], 2), "ptr", oPie_draw.imageCache[image]["p"])
@@ -478,20 +448,14 @@ ApplyTintManual(image, tintR, tintG, tintB) {
     oPie_draw.imageCache.Delete(image)
   }
 
-  ; Allocate global memory for Direct2D (Logic from ShinsOverlayClass source )
   pData := DllCall("GlobalAlloc", "uint", 0x40, "ptr", 16 + ((w * h) * 4), "ptr")
-
-  ; Use the Overlay Class's internal MCode to copy/format pixels (Logic from source )
-  ; We access the hidden _cacheImage method pointer directly
   DllCall(oPie_draw._cacheImage, "Ptr", pData, "Ptr", scan, "int", w, "int", h, "uchar", 255, "int")
 
-  ; Create the D2D Bitmap from memory
   d2dBitmap := 0
   d2dProps := Buffer(64, 0)
   NumPut("uint", 28, d2dProps, 0)
   NumPut("uint", 1, d2dProps, 4)
 
-  ; Call CreateBitmap on the RenderTarget (VTable index 4)
   if (oPie_draw.bits) { ; 64-bit logic
     bfSize := Buffer(64)
     NumPut("uint", w, bfSize, 0)
@@ -503,13 +467,9 @@ ApplyTintManual(image, tintR, tintG, tintB) {
     pData, "uint", 4 * w, "ptr", d2dProps, "Ptr*", &d2dBitmap)
   }
 
-  ; Update the Cache with the new D2D Bitmap
   if (d2dBitmap)
     oPie_draw.imageCache[image] := Map("p", d2dBitmap, "w", w, "h", h)
 
-  ; -------------------------------------------------------------------------
-  ; CLEANUP
-  ; -------------------------------------------------------------------------
   DllCall("Gdiplus\GdipBitmapUnlockBits", "Ptr", newBm, "Ptr", bmdata)
   DllCall("gdiplus\GdipDisposeImageAttributes", "Ptr", ia)
   DllCall("gdiplus\GdipDeleteGraphics", "Ptr", g)
