@@ -10,28 +10,28 @@ SetWorkingDir A_ScriptDir
 ; Setup Overlay
 oPie_draw := ShinsOverlayClass(0, 0, A_ScreenWidth, A_ScreenHeight)
 oPie_draw.SetAntialias(True)
-
-; --- Configuration Constants ---
-; itemCount := 16         ; Try changing this (1-16)
-; radius := 150           ; Base starting radius
-; scale := 1              ; Global scale
-pi := 3.1415926535
-
-; Shape Control
-; flattenY := 0.95        ; 1.0 = Circle, 0.75 = Squashed Poles (Earth-like)
-; itemGrowth := 5         ; How many pixels to add to radius per extra item
-; squareSize := 64
+ensureJSON(&settings)
 
 ; State variables
 isKeyDown := false
 anchor_curX := 0, anchor_curY := 0
 
-ensureJSON(&settings)
+; --- Configuration Constants ---
+pi := 3.1415926535
+itemCount := settings["items"].Length
+radius := settings["constants"]["radius"]
+scale := settings["constants"]["scale"]
+
+; Shape Control
+flattenY := settings["constants"]["flattenY"]
+itemGrowth := settings["constants"]["itemGrowth"]
+squareSize := settings["constants"]["squareSize"]
+
 loadAssets(wheel := loadWheel())
 
-msgbox settings["squareSize"]
-; SetTimer render, 1
-return
+; RunScript(settings["items"][1]["script"])
+SetTimer render, 1
+
 render() {
   static rotation := 0
   static lastSelection := -1
@@ -44,20 +44,18 @@ render() {
     dx := curX - anchor_curX
     dy := curY - anchor_curY
     mouseAngle := Atan2(dx, dy)
+    mouseAngle += 90
     rotation := rotation >= 360 ? 0 : (rotation += 0.5)
 
-    ; new structure like border_circle, oglow_skull edit here and change on selected
-    oPie_draw.DrawImage("circleTint", anchor_curX, anchor_curY, 100 * scale, 100 * scale, , , , , 0.5, true, rotation)
-    oPie_draw.DrawImage("glowTint", anchor_curX, anchor_curY, 200 * scale, 200 * scale, , , , , 0.5, true, rotation)
-    oPie_draw.DrawImage("pointerTint", anchor_curX + 10 * scale * Cos(mouseAngle * (pi / 180)), anchor_curY + 10 * scale * Sin(mouseAngle * (pi / 180)), 250 * scale, 250 * scale, , , , , 0.5, true, mouseAngle + 90)
-    
-    mouseAngle += 90
     stepAngle := 360 / itemCount
-    selectIndex := Mod(Round(mouseAngle / stepAngle), itemCount)
+    global selectIndex := Mod(Round(mouseAngle / stepAngle), itemCount)
 
     effectiveRadius := (radius + (itemCount * itemGrowth)) * scale
     radX := effectiveRadius
     radY := effectiveRadius * flattenY
+
+    ; new structure like border_circle, oglow_skull edit here and change on selected
+    
 
     loop itemCount {
       i := A_Index - 1
@@ -69,20 +67,37 @@ render() {
       targetY := Floor(anchor_curY + Sin(angleRad) * radY)
 
       drawSize := squareSize
+      global select := !inRegionCircle(curX, curY, anchor_curX, anchor_curY, 50 * scale)
       if (selected) {
-        drawSize := squareSize * 1.5
+        
         ; oPie_draw.DrawImage("borderTint", targetX, targetY, drawSize, drawSize, , , , , , true)
-        oPie_draw.DrawImage("oglowTint", targetX, targetY, drawSize, drawSize, , , , , 0.5, true)
+        ; oPie_draw.DrawImage("oglow_" settings["items"][selectIndex+1]["icon"], targetX, targetY, drawSize, drawSize, , , , , 0.5, true)
         ; oPie_draw.DrawImage("iglowTint", targetX, targetY, drawSize, drawSize, , , , , 0.5, true)
+        
+
+        
+        if(select) {
+          drawSize := squareSize * 1.5
+        
+          oPie_draw.DrawImage("pointer_" settings["items"][A_Index]["icon"] ,
+          anchor_curX + 10 * scale * Cos((mouseAngle - 90) * (pi / 180)),
+          anchor_curY + 10 * scale * Sin((mouseAngle - 90) * (pi / 180)),
+          250 * scale, 250 * scale, , , , , 0.5, true, mouseAngle)
+        }
+
+        oPie_draw.DrawImage("circle_" settings["items"][A_Index]["icon"] , anchor_curX, anchor_curY, 100 * scale, 100 * scale, , , , , 0.5, true, rotation)
+        oPie_draw.DrawImage("glow_" settings["items"][A_Index]["icon"] , anchor_curX, anchor_curY, 200 * scale, 200 * scale, , , , , 0.5, true, rotation)
       }
-      else {
-         ; oPie_draw.DrawImage(border, targetX, targetY, drawSize, drawSize, , , , , , true)
-         oPie_draw.DrawImage(oglow, targetX, targetY, drawSize, drawSize, , , , , , true)
-         ; oPie_draw.DrawImage(iglow, targetX, targetY, drawSize, drawSize, , , , , , true)
-      }
+      ; else {
+      ;    ; oPie_draw.DrawImage(border, targetX, targetY, drawSize, drawSize, , , , , , true)
+      ;    oPie_draw.DrawImage(wheel["oglow"], targetX, targetY, drawSize, drawSize, , , , , , true)
+      ;    ; oPie_draw.DrawImage(iglow, targetX, targetY, drawSize, drawSize, , , , , , true)
+      ; }
+      oPie_draw.DrawImage("oglow_" settings["items"][A_Index]["icon"], targetX, targetY, drawSize, drawSize, , , , , 0.5, true)
     }
     ; Debug Text
-    ; oPie_draw.DrawText(Round(GetDistance(anchor_curX, anchor_curY, curX, curY)), curX, curY, 20, 0xFF00FF00)
+    ; msgbox selectIndex
+    ; oPie_draw.DrawText(select, curX, curY, 20, 0xFF00FF00)
     oPie_draw.EndDraw()
   }
 }
@@ -112,9 +127,12 @@ render() {
 }
 
 !d Up:: {
-  global isKeyDown
+  global isKeyDown, select
   
   isKeyDown := false
+
+  if(select)
+    RunScript(settings["items"][selectIndex+1]["script"])
   oPie_draw.Clear()
 }
 
@@ -133,8 +151,8 @@ inRegionRect(mx, my, x, y, w, h) {
   return (mx >= x && mx <= (x + w) && my >= y && my <= (y + h))
 }
 
-inRegionCircle(mx, my, cx, cy, r) {
-  return ((mx - cx) ** 2 + (my - cy) ** 2) <= (r ** 2)
+inRegionCircle(mx, my, circle_x, circle_y, r) {
+  return ((mx - circle_x) ** 2 + (my - circle_y) ** 2) <= (r ** 2)
 }
 
 hsl2rgb(h, s, l) {
@@ -233,15 +251,36 @@ ensureJSON(&settings) {
 }
 
 createSettings() {
-  obj := Map()
-  obj["radius"] := 150
-  obj["scale"] := 1
-  obj["itemCount"] := 16
-  obj["flattenY"] := 0.95
-  obj["itemGrowth"] := 5
-  obj["squareSize"] := 64
+  constants := Map(), items := Array()
+  obj := Map("constants", constants, "items", items)
+  obj["constants"]["radius"] := 150
+  obj["constants"]["scale"] := 1
+  obj["constants"]["flattenY"] := 0.95
+  obj["constants"]["itemGrowth"] := 5
+  obj["constants"]["squareSize"] := 64
+  
+  obj["items"].Push(Map("icon", "star", "script", "msgbox 'You can write any ahk code you want!'"))
+  obj["items"].Push(Map("icon", "diamond", "script", "msgbox 'In line code definitions!'"))
   JSON.DumpFile(obj, "settings.json", true)
   return obj
+}
+
+RunScript(code) {
+try {
+    shell := ComObject("WScript.Shell")
+
+    if A_IsCompiled {
+      cmd := '"' A_AhkPath '" /script /ErrorStdOut *'
+    } else {
+      cmd := '"' A_AhkPath '" /ErrorStdOut *'
+    }
+
+    exec := shell.Exec(cmd)
+    exec.StdIn.Write(code)
+    exec.StdIn.Close()
+  } catch as err {
+    MsgBox("Error executing dynamic code:`n" err.Message)
+  }
 }
 
 GetDominantVibrantColor(imagePath, &color, alpha := 255) {
