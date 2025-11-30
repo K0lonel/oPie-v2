@@ -3,30 +3,35 @@
 Persistent
 SendMode "Input"
 SetWorkingDir A_ScriptDir
+#Warn All, off
 #Include <ShinsOverlayClass>
+#Include <JSON>
 
 ; Setup Overlay
 oPie_draw := ShinsOverlayClass(0, 0, A_ScreenWidth, A_ScreenHeight)
 oPie_draw.SetAntialias(True)
 
 ; --- Configuration Constants ---
-itemCount := 16         ; Try changing this (1-16)
-radius := 150           ; Base starting radius
-scale := 1              ; Global scale
+; itemCount := 16         ; Try changing this (1-16)
+; radius := 150           ; Base starting radius
+; scale := 1              ; Global scale
 pi := 3.1415926535
 
 ; Shape Control
-flattenY := 0.95        ; 1.0 = Circle, 0.75 = Squashed Poles (Earth-like)
-itemGrowth := 5         ; How many pixels to add to radius per extra item
-squareSize := 64
+; flattenY := 0.95        ; 1.0 = Circle, 0.75 = Squashed Poles (Earth-like)
+; itemGrowth := 5         ; How many pixels to add to radius per extra item
+; squareSize := 64
 
 ; State variables
 isKeyDown := false
 anchor_curX := 0, anchor_curY := 0
 
+ensureJSON(&settings)
 loadAssets(wheel := loadWheel())
-SetTimer render, 1
 
+msgbox settings["squareSize"]
+; SetTimer render, 1
+return
 render() {
   static rotation := 0
   static lastSelection := -1
@@ -196,7 +201,7 @@ loadWheel() {
 }
 
 loadAssets(assetsMap) {
-  ensureFolderStructure(targetFolder := A_ScriptDir "\assets\macro")
+  ensureFolderStructure(targetFolder := A_ScriptDir "\assets\icons")
 
   Loop Files, targetFolder "\*.*" {
     SplitPath(A_LoopFileName, , , , &itemName)
@@ -221,8 +226,23 @@ ensureFolderStructure(targetFolder) {
   return true
 }
 
+ensureJSON(&settings) {
+  if(!FileExist("settings.json"))
+    settings := createSettings()
+  settings := JSON.LoadFile("settings.json")
+}
 
-
+createSettings() {
+  obj := Map()
+  obj["radius"] := 150
+  obj["scale"] := 1
+  obj["itemCount"] := 16
+  obj["flattenY"] := 0.95
+  obj["itemGrowth"] := 5
+  obj["squareSize"] := 64
+  JSON.DumpFile(obj, "settings.json", true)
+  return obj
+}
 
 GetDominantVibrantColor(imagePath, &color, alpha := 255) {
   ; 1. Load the image
