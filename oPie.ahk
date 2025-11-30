@@ -11,6 +11,7 @@ SetWorkingDir A_ScriptDir
 oPie_draw := ShinsOverlayClass(0, 0, A_ScreenWidth, A_ScreenHeight)
 oPie_draw.SetAntialias(True)
 ensureJSON(&settings)
+loadAssets(wheel := loadWheel())
 
 ; State variables
 isKeyDown := false
@@ -27,11 +28,8 @@ flattenY := settings["constants"]["flattenY"]
 itemGrowth := settings["constants"]["itemGrowth"]
 squareSize := settings["constants"]["squareSize"]
 
-loadAssets(wheel := loadWheel())
 
-; RunScript(settings["items"][1]["script"])
 SetTimer render, 1
-
 render() {
   static rotation := 0
   static lastSelection := -1
@@ -54,8 +52,6 @@ render() {
     radX := effectiveRadius
     radY := effectiveRadius * flattenY
 
-    ; new structure like border_circle, oglow_skull edit here and change on selected
-    
 
     loop itemCount {
       i := A_Index - 1
@@ -69,13 +65,6 @@ render() {
       drawSize := squareSize
       global select := !inRegionCircle(curX, curY, anchor_curX, anchor_curY, 50 * scale)
       if (selected) {
-        
-        ; oPie_draw.DrawImage("borderTint", targetX, targetY, drawSize, drawSize, , , , , , true)
-        ; oPie_draw.DrawImage("oglow_" settings["items"][selectIndex+1]["icon"], targetX, targetY, drawSize, drawSize, , , , , 0.5, true)
-        ; oPie_draw.DrawImage("iglowTint", targetX, targetY, drawSize, drawSize, , , , , 0.5, true)
-        
-
-        
         if(select) {
           drawSize := squareSize * 1.5
         
@@ -88,34 +77,14 @@ render() {
         oPie_draw.DrawImage("circle_" settings["items"][A_Index]["icon"] , anchor_curX, anchor_curY, 100 * scale, 100 * scale, , , , , 0.5, true, rotation)
         oPie_draw.DrawImage("glow_" settings["items"][A_Index]["icon"] , anchor_curX, anchor_curY, 200 * scale, 200 * scale, , , , , 0.5, true, rotation)
       }
-      ; else {
-      ;    ; oPie_draw.DrawImage(border, targetX, targetY, drawSize, drawSize, , , , , , true)
-      ;    oPie_draw.DrawImage(wheel["oglow"], targetX, targetY, drawSize, drawSize, , , , , , true)
-      ;    ; oPie_draw.DrawImage(iglow, targetX, targetY, drawSize, drawSize, , , , , , true)
-      ; }
-      oPie_draw.DrawImage("oglow_" settings["items"][A_Index]["icon"], targetX, targetY, drawSize, drawSize, , , , , 0.5, true)
+      ; oPie_draw.DrawImage("oglow_" settings["items"][A_Index]["icon"], targetX, targetY, drawSize, drawSize, , , , , 0.5, true)
+      oPie_draw.DrawImage(settings["items"][A_Index]["icon"], targetX, targetY, drawSize, drawSize, , , , , 0.5, true)
     }
     ; Debug Text
-    ; msgbox selectIndex
     ; oPie_draw.DrawText(select, curX, curY, 20, 0xFF00FF00)
     oPie_draw.EndDraw()
   }
 }
-
-; changeColor() {
-;     h := Random(0, 360) / 360
-;     s := Random(42, 98) / 100
-;     l := Random(40, 90) / 100
-;     color := hsl2rgb(h, s, l)
-
-;     ApplyTintManual(A_ScriptDir "\assets\wheel\circle.png", color.r, color.g, color.b)
-;     ApplyTintManual(A_ScriptDir "\assets\wheel\glow.png",   color.r, color.g, color.b)
-;     ApplyTintManual(A_ScriptDir "\assets\wheel\pointer.png", color.r, color.g, color.b)
-
-;     ApplyTintManual(A_ScriptDir "\assets\wheel\borderlo.png", color.r, color.g, color.b)
-;     ApplyTintManual(A_ScriptDir "\assets\wheel\iglow.png",    color.r, color.g, color.b)
-;     ApplyTintManual(A_ScriptDir "\assets\wheel\oglow.png",    color.r, color.g, color.b)
-; }
 
 !d:: {
   global isKeyDown, anchor_curX, anchor_curY
@@ -226,6 +195,7 @@ loadAssets(assetsMap) {
     cleanItemName := StrLower(itemName)
     getDominantVibrantColor(A_LoopFileFullPath, &color)
     
+    CreateTintedVariant(A_LoopFileFullPath, cleanItemName, 1, 1, 1) ; add original one
     for key, assetPath in assetsMap {
       CreateTintedVariant(assetPath, key "_" cleanItemName, color.r, color.g, color.b)
     }
