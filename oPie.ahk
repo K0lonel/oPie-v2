@@ -232,7 +232,7 @@ createSettings() {
   obj["constants"]["squareSize"] := 64
   
   obj["items"].Push(Map("icon", "star", "script", "msgbox 'You can write any ahk code you want!'"))
-  obj["items"].Push(Map("icon", "diamond", "script", "msgbox 'In line code definitions!'"))
+  obj["items"].Push(Map("icon", "diamond", "script", "msgbox 'In line code definitions!' `n msgbox 'Multiple lines!'"))
   JSON.DumpFile(obj, "settings.json", true)
   return obj
 }
