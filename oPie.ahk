@@ -519,4 +519,4 @@ ApplyTintManual(image, tintR, tintG, tintB) {
   return true
 }
 
-$^r:: Reload
+; $^r:: Reload
