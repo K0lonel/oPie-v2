@@ -78,7 +78,7 @@ render() {
         oPie_draw.DrawImage("glow_" settings["items"][A_Index]["icon"] , anchor_curX, anchor_curY, 200 * scale, 200 * scale, , , , , 0.5, true, rotation)
       }
       ; oPie_draw.DrawImage("oglow_" settings["items"][A_Index]["icon"], targetX, targetY, drawSize, drawSize, , , , , 0.5, true)
-      oPie_draw.DrawImage(settings["items"][A_Index]["icon"], targetX, targetY, drawSize, drawSize, , , , , 0.5, true)
+      oPie_draw.DrawImage(settings["items"][A_Index]["icon"], targetX, targetY, drawSize, drawSize, , , , , 0.8, true)
     }
     ; Debug Text
     ; oPie_draw.DrawText(select, curX, curY, 20, 0xFF00FF00)
