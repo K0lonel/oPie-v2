@@ -11,6 +11,7 @@ This project renders a customizable ring of icons using Direct2D. It automatical
 * **Smart Selection:** Uses mouse angle detection rather than collision boxes for fluid gesture selection.
 * **Shape Control:** Supports circular or elliptical ("Earth-like") rendering.
 * **Execution:** Bind unique, custom AHK scripts to each box independently.
+* **Plugin Support:** Define complex custom functions in an external `Plugins.ahk` file and invoke them directly from the menu.
 
 ### Setup & Usage
 
@@ -18,6 +19,21 @@ This project renders a customizable ring of icons using Direct2D. It automatical
 2. Ensure `ShinsOverlayClass.ahk` and `cJson.ahk` are in your Lib folder.
 3. Run `oPie.ahk`.
 4. Default hotkey is **Alt+D** (Hold to open, release to select, center to cancel).
+
+### Custom Functions (Plugins)
+To keep your logic clean, you can define your own functions in `Plugins.ahk`. The script automatically includes this file, allowing you to call these functions directly from your `settings.json`.
+
+**Example:**
+1. In `Plugins.ahk`:
+   ```autohotkey
+   MyCustomMacro() {
+       MsgBox "Hello from Plugins!"
+   }
+   ```
+2. In `settings.json`:
+   ```json
+   { "icon": "star", "script": "MyCustomMacro()" }
+   ```
 
 ### Folder Structure
 The script relies on a specific folder structure to load assets:

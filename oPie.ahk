@@ -232,13 +232,14 @@ createSettings() {
   obj["constants"]["squareSize"] := 64
   
   obj["items"].Push(Map("icon", "star", "script", "msgbox 'You can write any ahk code you want!'"))
+  obj["items"].Push(Map("icon", "triangle", "script", "Greetings()"))
   obj["items"].Push(Map("icon", "diamond", "script", "msgbox 'In line code definitions!' `n msgbox 'Multiple lines!'"))
   JSON.DumpFile(obj, "settings.json", true)
   return obj
 }
 
 RunScript(code) {
-try {
+  try {
     shell := ComObject("WScript.Shell")
 
     if A_IsCompiled {
@@ -248,7 +249,7 @@ try {
     }
 
     exec := shell.Exec(cmd)
-    exec.StdIn.Write(code)
+    exec.StdIn.Write("#Include <Plugins>`n" code)
     exec.StdIn.Close()
   } catch as err {
     MsgBox("Error executing dynamic code:`n" err.Message)
