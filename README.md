@@ -9,7 +9,6 @@ This project renders a customizable ring of icons using Direct2D. It automatical
 * **Dynamic Theming:** Automatically calculates HSL color values from your icons to tint the menu elements in real-time.
 * **Auto-Discovery:** Simply drop images into the assets folder; the script scans and builds the menu automatically.
 * **Smart Selection:** Uses mouse angle detection rather than collision boxes for fluid gesture selection.
-* **Shape Control:** Supports circular or elliptical ("Earth-like") rendering.
 * **Execution:** Bind unique, custom AHK scripts to each box independently.
 * **Plugin Support:** Define complex custom functions in an external `Plugins.ahk` file and invoke them directly from the menu.
 
@@ -32,7 +31,7 @@ To keep your logic clean, you can define your own functions in `Plugins.ahk`. Th
    ```
 2. In `settings.json`:
    ```json
-   { "icon": "star", "script": "MyCustomMacro()" }
+   { "icon": "star", "name": "Function call", "script": "MyCustomMacro()" }
    ```
 
 ### Folder Structure

@@ -58,6 +58,7 @@ render() {
     loop itemCount {
       i := A_Index - 1
       selected := (i == selectIndex)
+      currentItem := settings["items"][A_Index]
 
       angleDeg := (i * stepAngle) - 90 ; -90 because we want to start at top
       angleRad := angleDeg * (pi / 180)
@@ -70,17 +71,31 @@ render() {
         if(select) {
           drawSize := squareSize * 1.5
         
-          oPie_draw.DrawImage("pointer_" settings["items"][A_Index]["icon"] ,
+          oPie_draw.DrawImage("pointer_" currentItem["icon"] ,
           anchor_curX + 10 * scale * Cos((mouseAngle - 90) * (pi / 180)),
           anchor_curY + 10 * scale * Sin((mouseAngle - 90) * (pi / 180)),
           250 * scale, 250 * scale, , , , , 0.5, true, mouseAngle)
         }
 
-        oPie_draw.DrawImage("circle_" settings["items"][A_Index]["icon"] , anchor_curX, anchor_curY, 100 * scale, 100 * scale, , , , , 0.5, true, rotation)
-        oPie_draw.DrawImage("glow_" settings["items"][A_Index]["icon"] , anchor_curX, anchor_curY, 200 * scale, 200 * scale, , , , , 0.5, true, rotation)
+        oPie_draw.DrawImage("circle_" currentItem["icon"] , anchor_curX, anchor_curY, 100 * scale, 100 * scale, , , , , 0.5, true, rotation)
+        oPie_draw.DrawImage("glow_" currentItem["icon"] , anchor_curX, anchor_curY, 200 * scale, 200 * scale, , , , , 0.5, true, rotation)
       }
-      ; oPie_draw.DrawImage("oglow_" settings["items"][A_Index]["icon"], targetX, targetY, drawSize, drawSize, , , , , 0.5, true)
-      oPie_draw.DrawImage(settings["items"][A_Index]["icon"], targetX, targetY, drawSize, drawSize, , , , , 0.8, true)
+      ; oPie_draw.DrawImage("oglow_" currentItem["icon"], targetX, targetY, drawSize, drawSize, , , , , 0.5, true)
+      oPie_draw.DrawImage(currentItem["icon"], targetX, targetY, drawSize, drawSize, , , , , 0.8, true)
+      
+    }
+    ; put text on top layer
+    loop itemCount {
+      i := A_Index - 1
+      currentItem := settings["items"][A_Index]
+
+      angleDeg := (i * stepAngle) - 90 ; -90 because we want to start at top
+      angleRad := angleDeg * (pi / 180)
+      targetX := Floor(anchor_curX + Cos(angleRad) * radX)
+      targetY := Floor(anchor_curY + Sin(angleRad) * radY)
+      ; only show if it has a name and is not empty
+      if(currentItem.Has("name") && StrLen(currentItem["name"]))
+        oPie_draw.DrawText(currentItem["name"], targetX-50, targetY+50, 15, 0xFFFFFFFF,, "w100 h100 aCenter")
     }
     ; Debug Text
     ; oPie_draw.DrawText(select, curX, curY, 20, 0xFF00FF00)
@@ -232,7 +247,7 @@ createSettings() {
   obj["constants"]["squareSize"] := 64
   
   obj["items"].Push(Map("icon", "star", "script", "msgbox 'You can write any ahk code you want!'"))
-  obj["items"].Push(Map("icon", "triangle", "script", "Greetings()"))
+  obj["items"].Push(Map("icon", "triangle", "name", "You can even name it", "script", "Greetings()"))
   obj["items"].Push(Map("icon", "diamond", "script", "msgbox 'In line code definitions!' `n msgbox 'Multiple lines!'"))
   JSON.DumpFile(obj, "settings.json", true)
   return obj
