@@ -5,7 +5,7 @@ A lightweight, hardware-accelerated radial menu built in AutoHotkey v2.
 This project renders a customizable ring of icons using Direct2D. It automatically scans for icons, extracts their dominant vibrant colors, and dynamically tints the UI elements (borders, glows) to match the selected item.
 
 <p align="center">
-  <img src="https://i.imgur.com/6vNInAC.mp4" alt="oPie Demo" width="600">
+  <img src="assets/how_it_works.gif" alt="How it works" width="600">
 </p>
 
 ### Features
